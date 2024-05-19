@@ -1,79 +1,70 @@
 import { Injectable } from '@nestjs/common';
 import { CustomerData } from './dto/customer-data.dto';
+import { OracleService } from '../oracle/oracle.service';
 
 @Injectable()
 export class ClientsService {
 
+    constructor(
+        private oracle: OracleService
+    ) {}
+
     async find(search: string) : Promise<CustomerData[]> {
-        let customers: CustomerData[] = [
-            {
-              customer_id: 1,
-              cust_first_name: 'Johna',
-              cust_last_name: 'Doe',
-              credit_limit: 1000,
-              cust_email: 'john@gmail.com',
-              income_level: 'High',
-              region: 'A'
-            },
-            {
-              customer_id: 1,
-              cust_first_name: 'John',
-              cust_last_name: 'Doe',
-              credit_limit: 1000,
-              cust_email: 'john@gmail.com',
-              income_level: 'High',
-              region: 'A'
-            },
-            {
-              customer_id: 1,
-              cust_first_name: 'John',
-              cust_last_name: 'Doe',
-              credit_limit: 1000,
-              cust_email: 'john@gmail.com',
-              income_level: 'High',
-              region: 'A'
-            },
-            {
-              customer_id: 1,
-              cust_first_name: 'John',
-              cust_last_name: 'Doe',
-              credit_limit: 1000,
-              cust_email: 'john@gmail.com',
-              income_level: 'High',
-              region: 'A'
-            }
-          ];
+        let customers = await this.oracle.find_customers(search??'');
         return customers;
     }
 
     async create(dto: CustomerData) {
-        console.log(dto);
+        let result = await this.oracle.insert_customer(dto);
+        if(result.success) {
+            return {
+                message: 'Cliente creado con éxito!',
+                should_reload: true
+            };
+        }
+        if(result.error == 20001) {
+            return {
+                message: 'Región inválida.',
+                should_reload: false
+            };
+        }
         return {
-            message: 'Cliente creado con éxito!',
-            should_reload: true
+            message: 'No se puede crear. Verifique los datos.',
+            should_reload: false
         };
     }
 
-    async update(cust_id: string, dto: CustomerData) {
-        console.log(cust_id);
-        console.log(dto);
+    async update(cust_id: number, dto: CustomerData) {
+        let result = await this.oracle.update_customer(cust_id, dto);
+        if(result.success) {
+            return {
+                message: 'Cliente actualizado con éxito!',
+                should_reload: true
+            };
+        }
         return {
-            message: 'Cliente actualizado con éxito!',
-            should_reload: true
+            message: 'No se puede actualizar. Verifique los datos.',
+            should_reload: false
         };
     }
 
-    async delete(cust_id: string) {
-        console.log(cust_id);
+    async delete(cust_id: number) {
+        let result = await this.oracle.delete_customer(cust_id);
+        if(result.success) {
+            return {
+                message: 'Cliente eliminado con éxito!',
+                should_reload: true
+            };
+        }
         return {
-            message: 'Cliente eliminado con éxito!',
-            should_reload: true
+            message: 'No se puede eliminar. Verifique los datos.',
+            should_reload: false
         };
     }
 
     async count() {
         return {
-            count: 10
+            count: await this.oracle.count_customers()
         };
     }
 
